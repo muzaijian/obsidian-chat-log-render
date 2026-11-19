@@ -59,7 +59,7 @@ Accepted code block languages: `chat`, `chatlog`, `wechat`, `微信`.
 ## Manual install
 
 1. Download `main.js`, `manifest.json`, `styles.css` from the latest release.
-2. Put them in `<vault>/.obsidian/plugins/chat-log-render/`.
+2. Put them in `<vault>/.obsidian/plugins/obsidian-chat-log-render/`.
 3. Enable "Chat Log Render" in Settings → Community plugins.
 
 ## Compatibility
