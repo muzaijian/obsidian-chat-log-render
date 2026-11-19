@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Chat Log Render 截图生成</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 36px;
+    padding: 32px;
+    background: #FFFFFF;
+    font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  }
+  .shot {
+    background: #FFFFFF;
+    padding: 20px 24px;
+    width: 620px;
+    box-sizing: border-box;
+  }
+  .shot-label {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 10px;
+  }
+  /* 让插件卡片在截图里更醒目一点 */
+  .shot .wcr-chat { max-width: 560px; }
+</style>
+</head>
+<body>
+
+<div class="shot" id="shot1">
+  <div class="shot-label">1 · Paste raw chat export → rendered chat card（粘贴聊天记录 → 渲染成聊天卡片）</div>
+</div>
+
+<div class="shot" id="shot2">
+  <div class="shot-label">2 · Media lines &amp; system notice（媒体消息与系统提示）</div>
+</div>
+
+<script>
+/* 直接加载插件真实解析器（main.js 的 parseChat 部分，剥掉 obsidian 依赖） */
+</script>
+<script src="main.js"></script>
+<script>
+// main.js 末尾 module.exports = WCRPlugin; 在浏览器里不会执行，直接复用其内部函数：
+// parseChat / renderChat 都定义在文件顶层，但 renderChat 依赖 document —— 浏览器可用。
+// 由于 main.js 在浏览器加载时 require('obsidian') 会报错，这里改为手动内联加载。
+</script>
+<script>
+// Polyfill：Obsidian 给 HTMLElement 扩展了 addClass/removeClass/empty，原生浏览器没有
+if (!Element.prototype.addClass) {
+  Element.prototype.addClass = function (...cls) { this.classList.add(...cls); return this; };
+}
+if (!Element.prototype.removeClass) {
+  Element.prototype.removeClass = function (...cls) { this.classList.remove(...cls); return this; };
+}
+if (!Element.prototype.empty) {
+  Element.prototype.empty = function () { while (this.firstChild) this.removeChild(this.firstChild); return this; };
+}
+</script>
+<script>
+(async function () {
+  try {
+    // 在浏览器里手动构造一个「剥依赖」的 main.js：把 require 行替换掉后执行
+    const res = await fetch('../main.js');
+    let src = await res.text();
+    src = src.replace("const obsidian = require('obsidian');", 'const obsidian = {};');
+    // 截断插件主体部分（Plugin/SettingTab 类引用 obsidian.*，浏览器不需要）
+    const cut = src.indexOf('/* ---------- 插件主体');
+    if (cut > 0) src = src.slice(0, cut);
+    src += '\nreturn { parseChat, renderChat };';
+    const { parseChat, renderChat } = new Function(src)();
+
+  const settings = { myName: '木仔建', showAvatar: true };
+
+  const sample1 = [
+    '# 质安监项目群 (156)',
+    '',
+    '午夜阳光',
+    '2026年11月19日  9:31',
+    '能查到哪个接口吗，好像没有总包和分包对调功能呢',
+    '',
+    '木仔建',
+    '2026年11月19日  9:46',
+    '工程ID：bf5ad9cf9244be524a13565432de1f71',
+    '接口：POST /project/update（编辑工程）',
+    '● 什么时候改的',
+    '2026-10-17 13:34:02',
+    '● 谁改的',
+    '王春  账号 94aaf83d0909e14d',
+    '● 改了什么',
+    'contractorUnitId：丰澄（施工总包）→ 同禾（建设）',
+    'constUnitId：同禾（建设）→ 丰澄（施工总包）',
+    '其余字段完全一致 → 同一次编辑里，两个单位下拉选反了',
+    '',
+    '午夜阳光',
+    '2026年11月19日  9:49',
+    '收到，那工资单取的是哪个字段？'
+  ].join('\n');
+
+  const sample2 = [
+    '木仔建',
+    '2026年11月19日  10:02',
+    '[图片] 微信图片_20261119094919_5443.dat',
+    '木仔建',
+    '2026年11月19日  10:03',
+    '[文件] 工资专户绑定说明.pdf',
+    '> 以上为合并转发消息'
+  ].join('\n');
+
+  renderChat(document.getElementById('shot1').appendChild(document.createElement('div')), parseChat(sample1), settings);
+  renderChat(document.getElementById('shot2').appendChild(document.createElement('div')), parseChat(sample2), settings);
+  // ?only=shot1 / ?only=shot2：截图时只显示指定卡片
+  const only = new URLSearchParams(location.search).get('only');
+  if (only === 'shot1') document.getElementById('shot2').style.display = 'none';
+  if (only === 'shot2') document.getElementById('shot1').style.display = 'none';
+  window.__ready = true;
+  } catch (e) {
+    document.title = 'ERR: ' + (e && e.message || e);
+    const el = document.createElement('pre');
+    el.style.color = '#A32D2D';
+    el.textContent = String(e && e.stack || e);
+    document.body.prepend(el);
+    window.__ready = true;
+  }
+})();
+</script>
+</body>
+</html>
