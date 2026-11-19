@@ -1,9 +1,9 @@
 {
   "id": "chat-log-render",
   "name": "Chat Log Render",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "minAppVersion": "1.0.0",
-  "description": "Render chat logs (WeChat, iMessage style) from ```chat code blocks. Paste raw chat exports and they become bubble-style chat cards in reading view.",
+  "description": "Render chat logs into bubble-style cards from chat code blocks. Paste raw chat exports and they become chat cards in reading view.",
   "author": "lijian",
   "authorUrl": "https://github.com/muzaijian",
   "isDesktopOnly": false
