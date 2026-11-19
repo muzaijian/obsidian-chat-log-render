@@ -4,9 +4,11 @@ Render chat logs into chat-bubble cards inside your Obsidian notes. Paste a raw 
 
 在 Obsidian 笔记里把聊天记录渲染成聊天气泡卡片。把微信、QQ 或任意「昵称 + 时间 + 消息」格式的原始聊天记录粘贴进 ` ```chat ` 代码块，阅读视图自动变成干净的聊天界面。
 
-| Paste raw export → rendered card（粘贴即渲染） | Media & system lines（媒体与系统消息） |
+| Paste raw export → rendered card（写代码块 → 得到聊天卡片） | Media, system lines & right-side bubbles（媒体消息、系统提示与右侧绿气泡） |
 |---|---|
 | ![Chat Log Render demo 1](screenshots/shot1.png) | ![Chat Log Render demo 2](screenshots/shot2.png) |
+
+Each screenshot shows the source code block above and the rendered result below (all data in the screenshots is fictional). 截图为「源码块在上、渲染结果在下」的对照图（图中数据均为虚构）。
 
 ## Features 功能
 

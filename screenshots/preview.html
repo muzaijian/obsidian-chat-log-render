@@ -18,37 +18,66 @@
   .shot {
     background: #FFFFFF;
     padding: 20px 24px;
-    width: 620px;
+    width: 640px;
     box-sizing: border-box;
   }
   .shot-label {
     font-size: 13px;
     color: #666;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
-  /* 让插件卡片在截图里更醒目一点 */
-  .shot .wcr-chat { max-width: 560px; }
+  /* 模拟 Obsidian 代码块外观 */
+  .cb {
+    border: 0.5px solid #D8D8D8;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .cb-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #F2F2F2;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: #888;
+  }
+  .cb-lang {
+    font-family: Consolas, Menlo, monospace;
+    background: #E4E4E4;
+    border-radius: 4px;
+    padding: 1px 8px;
+    color: #555;
+  }
+  .cb pre {
+    margin: 0;
+    padding: 12px 14px;
+    font-family: Consolas, Menlo, 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.55;
+    color: #383A42;
+    background: #FAFAFA;
+    white-space: pre;
+  }
+  .arrow {
+    text-align: center;
+    font-size: 13px;
+    color: #999;
+    margin: 6px 0 10px;
+  }
+  .shot .wcr-chat { max-width: 560px; margin: 0 auto; }
 </style>
 </head>
 <body>
 
 <div class="shot" id="shot1">
-  <div class="shot-label">1 · Paste raw chat export → rendered chat card（粘贴聊天记录 → 渲染成聊天卡片）</div>
+  <div class="shot-label">1 · Write the code block → get the chat card（写代码块 → 得到聊天卡片）</div>
 </div>
 
 <div class="shot" id="shot2">
-  <div class="shot-label">2 · Media lines &amp; system notice（媒体消息与系统提示）</div>
+  <div class="shot-label">2 · Media, system lines &amp; right-side bubbles（媒体消息、系统提示与右侧绿气泡）</div>
 </div>
 
-<script>
-/* 直接加载插件真实解析器（main.js 的 parseChat 部分，剥掉 obsidian 依赖） */
-</script>
-<script src="main.js"></script>
-<script>
-// main.js 末尾 module.exports = WCRPlugin; 在浏览器里不会执行，直接复用其内部函数：
-// parseChat / renderChat 都定义在文件顶层，但 renderChat 依赖 document —— 浏览器可用。
-// 由于 main.js 在浏览器加载时 require('obsidian') 会报错，这里改为手动内联加载。
-</script>
 <script>
 // Polyfill：Obsidian 给 HTMLElement 扩展了 addClass/removeClass/empty，原生浏览器没有
 if (!Element.prototype.addClass) {
@@ -68,56 +97,78 @@ if (!Element.prototype.empty) {
     const res = await fetch('../main.js');
     let src = await res.text();
     src = src.replace("const obsidian = require('obsidian');", 'const obsidian = {};');
-    // 截断插件主体部分（Plugin/SettingTab 类引用 obsidian.*，浏览器不需要）
     const cut = src.indexOf('/* ---------- 插件主体');
     if (cut > 0) src = src.slice(0, cut);
     src += '\nreturn { parseChat, renderChat };';
     const { parseChat, renderChat } = new Function(src)();
 
-  const settings = { myName: '木仔建', showAvatar: true };
+    const settings = { myName: '木仔建', showAvatar: true };
 
-  const sample1 = [
-    '# 质安监项目群 (156)',
-    '',
-    '午夜阳光',
-    '2026年11月19日  9:31',
-    '能查到哪个接口吗，好像没有总包和分包对调功能呢',
-    '',
-    '木仔建',
-    '2026年11月19日  9:46',
-    '工程ID：bf5ad9cf9244be524a13565432de1f71',
-    '接口：POST /project/update（编辑工程）',
-    '● 什么时候改的',
-    '2026-10-17 13:34:02',
-    '● 谁改的',
-    '王春  账号 94aaf83d0909e14d',
-    '● 改了什么',
-    'contractorUnitId：丰澄（施工总包）→ 同禾（建设）',
-    'constUnitId：同禾（建设）→ 丰澄（施工总包）',
-    '其余字段完全一致 → 同一次编辑里，两个单位下拉选反了',
-    '',
-    '午夜阳光',
-    '2026年11月19日  9:49',
-    '收到，那工资单取的是哪个字段？'
-  ].join('\n');
+    /* 示例 1：基础用法（昵称行+时间行格式），全部为虚构数据 */
+    const chat1 = [
+      '# 周六爬山小分队 (5)',
+      '',
+      '小林',
+      '11月19日 08:30',
+      '这周六去爬白云山，早上七点半地铁站集合？',
+      '',
+      '阿哲',
+      '11月19日 08:41',
+      '可以，我带上水和干粮',
+      '',
+      '木仔建',
+      '11月19日 08:45',
+      '算我一个，天气预报说周六多云转晴',
+      '',
+      '小林',
+      '11月19日 08:47',
+      '那就定了，人到齐了群里发接龙'
+    ].join('\n');
+    const src1 = '```wechat\n' + chat1 + '\n```';
 
-  const sample2 = [
-    '木仔建',
-    '2026年11月19日  10:02',
-    '[图片] 微信图片_20261119094919_5443.dat',
-    '木仔建',
-    '2026年11月19日  10:03',
-    '[文件] 工资专户绑定说明.pdf',
-    '> 以上为合并转发消息'
-  ].join('\n');
+    /* 示例 2：媒体消息 + 系统提示 + 右侧气泡，全部为虚构数据 */
+    const chat2 = [
+      '阿哲',
+      '11月19日 09:12',
+      '[图片] IMG_20261119_085233.jpg',
+      '',
+      '阿哲',
+      '11月19日 09:15',
+      '[文件] 白云山登山路线图.pdf',
+      '',
+      '木仔建',
+      '11月19日 09:16',
+      '收到，周六见！',
+      '',
+      '> 以上为合并转发消息'
+    ].join('\n');
+    const src2 = '```chat\n' + chat2 + '\n```';
 
-  renderChat(document.getElementById('shot1').appendChild(document.createElement('div')), parseChat(sample1), settings);
-  renderChat(document.getElementById('shot2').appendChild(document.createElement('div')), parseChat(sample2), settings);
-  // ?only=shot1 / ?only=shot2：截图时只显示指定卡片
-  const only = new URLSearchParams(location.search).get('only');
-  if (only === 'shot1') document.getElementById('shot2').style.display = 'none';
-  if (only === 'shot2') document.getElementById('shot1').style.display = 'none';
-  window.__ready = true;
+    function addShot(elId, fenceSrc, chatSrc, lang) {
+      const shot = document.getElementById(elId);
+      const cb = document.createElement('div');
+      cb.className = 'cb';
+      cb.innerHTML = '<div class="cb-head"><span>source 源码</span><span class="cb-lang"></span></div>';
+      cb.querySelector('.cb-lang').textContent = lang;
+      const pre = document.createElement('pre');
+      pre.textContent = fenceSrc;
+      cb.appendChild(pre);
+      shot.appendChild(cb);
+      const arrow = document.createElement('div');
+      arrow.className = 'arrow';
+      arrow.textContent = '↓ 渲染效果 rendered ↓';
+      shot.appendChild(arrow);
+      renderChat(shot.appendChild(document.createElement('div')), parseChat(chatSrc), settings);
+    }
+
+    addShot('shot1', src1, chat1, 'wechat');
+    addShot('shot2', src2, chat2, 'chat');
+
+    // ?only=shot1 / ?only=shot2：截图时只显示指定卡片
+    const only = new URLSearchParams(location.search).get('only');
+    if (only === 'shot1') document.getElementById('shot2').style.display = 'none';
+    if (only === 'shot2') document.getElementById('shot1').style.display = 'none';
+    window.__ready = true;
   } catch (e) {
     document.title = 'ERR: ' + (e && e.message || e);
     const el = document.createElement('pre');
