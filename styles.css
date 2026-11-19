@@ -115,3 +115,22 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* 气泡内真实图片 */
+.wcr-bubble.wcr-bubble-media {
+  max-width: 260px;
+}
+
+.wcr-image {
+  display: block;
+  max-width: 240px;
+  max-height: 320px;
+  border-radius: 4px;
+  cursor: zoom-in;
+  background: #F0F0F0;
+}
+
+.wcr-bubble p,
+.wcr-bubble div {
+  margin: 0;
+}

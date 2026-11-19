@@ -217,7 +217,48 @@ function mediaIcon(type) {
   return ICONS.file;
 }
 
-function renderChat(container, parsed, settings) {
+/* 气泡内的图片/嵌入语法识别：
+ * ![](path) / ![alt](path)   — 标准 Markdown 图片
+ * ![[name.png]]              — Obsidian 嵌入（可带 #数字 裁剪后缀）
+ * 返回按出现顺序切分的段落数组：{type:'text',text} | {type:'img',src,alt} | {type:'embed',src} */
+const RE_MD_IMAGE = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
+const RE_OBS_EMBED = /!\[\[([^\]|]+?)(?:\|\d+)?\]\]/g;
+
+function splitImageSegments(content) {
+  const s = String(content);
+  const marks = [];
+  let m;
+  RE_MD_IMAGE.lastIndex = 0;
+  while ((m = RE_MD_IMAGE.exec(s)) !== null) {
+    marks.push({ start: m.index, end: m.index + m[0].length, kind: 'img', alt: m[1], src: m[2] });
+  }
+  RE_OBS_EMBED.lastIndex = 0;
+  while ((m = RE_OBS_EMBED.exec(s)) !== null) {
+    marks.push({ start: m.index, end: m.index + m[0].length, kind: 'embed', src: m[1].trim() });
+  }
+  if (!marks.length) return null;
+  marks.sort((a, b) => a.start - b.start);
+  const segments = [];
+  let cursor = 0;
+  for (const mark of marks) {
+    if (mark.start < cursor) continue; // 跳过重叠匹配
+    if (mark.start > cursor) {
+      const text = s.slice(cursor, mark.start).trim();
+      if (text) segments.push({ type: 'text', text: text });
+    }
+    segments.push(mark.kind === 'img'
+      ? { type: 'img', src: mark.src, alt: mark.alt }
+      : { type: 'embed', src: mark.src });
+    cursor = mark.end;
+  }
+  if (cursor < s.length) {
+    const text = s.slice(cursor).trim();
+    if (text) segments.push({ type: 'text', text: text });
+  }
+  return segments;
+}
+
+function renderChat(container, parsed, settings, app, ctx) {
   const chat = document.createElement('div');
   chat.addClass('wcr-chat');
   if (!settings.showAvatar) chat.addClass('wcr-no-avatar');
@@ -287,7 +328,10 @@ function renderChat(container, parsed, settings) {
     bubble.addClass('wcr-bubble');
 
     const media = looksLikeMedia(m.content);
-    if (media) {
+    const segments = splitImageSegments(m.content);
+
+    if (media && !(segments && segments.some(function (s) { return s.type !== 'text'; }))) {
+      // 纯媒体占位行（[图片] xxx），且不含真实图片语法
       const mv = document.createElement('div');
       mv.addClass('wcr-media');
       const ic = document.createElement('span');
@@ -300,6 +344,50 @@ function renderChat(container, parsed, settings) {
       mv.appendChild(label);
       bubble.appendChild(mv);
       bubble.addClass('wcr-bubble-media');
+    } else if (segments) {
+      // 含 ![](...) 或 ![[...]]：按段落渲染，图片解析库内路径显示真图
+      bubble.addClass('wcr-bubble-media');
+      for (const seg of segments) {
+        if (seg.type === 'text') {
+          const p = document.createElement('div');
+          p.textContent = seg.text;
+          bubble.appendChild(p);
+        } else {
+          let src = seg.type === 'embed' ? seg.src : decodeURIComponent(seg.src);
+          // Obsidian 嵌入的裁剪后缀（图片.png#500）不属于文件名，解析前去掉
+          const lookupPath = src.split('#')[0].trim();
+          const img = document.createElement('img');
+          img.addClass('wcr-image');
+          img.alt = seg.alt || '';
+          let resolved = null;
+          try {
+            if (app) {
+              // ① 按库内链接路径解析（附件/xxx.png 或纯文件名）
+              let file = app.metadataCache.getFirstLinkpathDest(lookupPath, '');
+              // ② 失败且像相对路径（../ 或 ./）→ 按代码块所在笔记解析相对路径
+              if (!file && /^[.]{1,2}\//.test(lookupPath) && ctx && ctx.sourcePath) {
+                const parts = lookupPath.split('/');
+                const baseParts = ctx.sourcePath.split('/');
+                baseParts.pop();
+                for (const part of parts) {
+                  if (part === '.') continue;
+                  else if (part === '..') baseParts.pop();
+                  else baseParts.push(part);
+                }
+                file = app.metadataCache.getFirstLinkpathDest(baseParts.join('/'), '');
+              }
+              // ③ 再退一步：仅按文件名全库匹配
+              if (!file) {
+                const fileName = lookupPath.split('/').pop();
+                file = app.metadataCache.getFirstLinkpathDest(fileName, '');
+              }
+              if (file) resolved = app.vault.getResourcePath(file);
+            }
+          } catch (e) { /* 解析失败则回落到原始 src */ }
+          img.src = resolved || src;
+          bubble.appendChild(img);
+        }
+      }
     } else {
       bubble.textContent = m.content;
     }
@@ -354,8 +442,8 @@ class WCRPlugin extends obsidian.Plugin {
   async onload() {
     await this.loadSettings();
 
-    const processor = (source, el) => {
-      renderChat(el, parseChat(source), this.settings);
+    const processor = (source, el, ctx) => {
+      renderChat(el, parseChat(source), this.settings, this.app, ctx);
     };
     for (const lang of ['chat', 'chatlog', 'wechat', '微信']) {
       this.registerMarkdownCodeBlockProcessor(lang, processor);

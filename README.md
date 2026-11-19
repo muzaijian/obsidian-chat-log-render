@@ -33,6 +33,7 @@ Each screenshot shows the source code block above and the rendered result below 
     [2026/11/19 9:31:02] Alice: Good morning!
     ```
 - **Smart parsing（智能防误判）** — data timestamps inside message bodies (e.g. `2026-10-17 13:34:02` pasted as part of a debug log) are kept as body text, not misread as new messages. 消息正文里的数据时间戳不会被误拆成新消息。
+- **Images inside bubbles（气泡内图片）** — standard Markdown `![alt](path)`, relative paths (`../../../附件/img.png`), and Obsidian embeds `![[img.png]]` all render as real images inside the bubble. Path resolution tries vault-relative → note-relative → filename lookup. 气泡内的 Markdown 图片、相对路径、Obsidian 嵌入语法都会显示为真实图片（按 库内路径 → 笔记相对路径 → 文件名 三级解析）。
 - **Media lines（媒体消息）** — `[image]`、`[file]`、`[voice]`、`[video]`（`[图片]`、`[文件]`、`[语音]`、`[视频]`）and similar lines render as media cards with icons. 带图标的媒体卡片。
 - **System lines（系统提示）** — a line starting with `>` renders as a centered grey system notice (e.g. "Merged forwarded messages" / 「以上为合并转发消息」).
 - **Date dividers（日期分隔线）** — inserted automatically when the date changes. 日期变化时自动插入。
